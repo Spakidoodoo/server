@@ -65,7 +65,8 @@ model Track {
 
   artistId String         @db.ObjectId
   artist   ArtistProfile? @relation(fields: [artistId], references: [id])
-
+  
+  trackNumber Int?     
   albumId String? @db.ObjectId
   album   Album?  @relation(fields: [albumId], references: [id])
 
@@ -77,9 +78,8 @@ model Track {
   language     String?
   visibility   Visibility @default(PUBLIC)
 
-  // inverse side of 1-1 with Lyric
   lyrics Lyric?
-
+  editorPick  Boolean @default(false) // For editor curation
   plays          PlayEvent[]
   likes          Like[]
   playlistTracks PlaylistTrack[]

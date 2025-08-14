@@ -94,3 +94,17 @@ export const validateRefreshToken = async (
     next(new UnauthorizedError('Invalid refresh token'));
   }
 };
+
+export const optionalAuth = (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+      req.user = { id: decoded.userId };
+    } catch (err) {
+      // Token exists but invalid - proceed as guest
+    }
+  }
+  next();
+};

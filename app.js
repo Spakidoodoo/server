@@ -7,6 +7,8 @@ import auth from './routes/auth.js';
 import artists from './routes/artists.js';
 import tracks from './routes/tracks.js';
 import playlists from './routes/playlists.js';
+import albums from './routes/albums.js';
+import discover from './routes/discover.js';
 dotenv.config();
 
 const app = express();
@@ -27,6 +29,9 @@ app.use('/api/auth', auth);
 app.use('/api/artists', artists);
 app.use('/api/tracks', tracks);
 app.use('/api/playlists', playlists);
+app.use('/api/albums', albums);
+app.use('/api/discover', discover);
+// discover
 
 app.get('/api', (req, res) => {
   res.json({ message: 'Welcome to the API' });
