@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ===== Enums =====
+enum Role {
+  LISTENER
+  ARTIST
+  ADMIN
+}
+
+enum Visibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+// ===== Models =====
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  role         Role     @default(LISTENER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // inverse side of 1-1 with ArtistProfile
+  artist ArtistProfile?
+
+  subscriptions Subscription[]
+  playlists     Playlist[]
+  likes         Like[]
+  follows       Follow[]       @relation("UserFollowsArtists")
+  playEvents    PlayEvent[]
+  payments      Payment[]
+}
+
+model ArtistProfile {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // 1-1 to User: FK must be unique and provide references
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  stageName         String
+  bio               String?
+  coverUrl          String?
+  labelSigned       Boolean            @default(false)
+  tracks            Track[]
+  albums            Album[]
+  followers         Follow[]           @relation("ArtistFollowedByUsers")
+  labelApplications LabelApplication[]
+}
+
+model Track {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+
+  artistId String         @db.ObjectId
+  artist   ArtistProfile? @relation(fields: [artistId], references: [id])
+
+  albumId String? @db.ObjectId
+  album   Album?  @relation(fields: [albumId], references: [id])
+
+  durationSec  Int?
+  audioUrl     String
+  waveformJson String?
+  coverUrl     String?
+  genre        String?
+  language     String?
+  visibility   Visibility @default(PUBLIC)
+
+  // inverse side of 1-1 with Lyric
+  lyrics Lyric?
+
+  plays          PlayEvent[]
+  likes          Like[]
+  playlistTracks PlaylistTrack[]
+  createdAt      DateTime        @default(now())
+}
+
+model Lyric {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // 1-1 to Track: FK must be unique and provide references
+  trackId String @unique @db.ObjectId
+  track   Track  @relation(fields: [trackId], references: [id])
+
+  content String
+}
+
+model Album {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+
+  artistId String         @db.ObjectId
+  artist   ArtistProfile? @relation(fields: [artistId], references: [id])
+
+  coverUrl   String?
+  tracks     Track[]
+  releasedAt DateTime?
+}
+
+model Playlist {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+
+  ownerId String @db.ObjectId
+  owner   User?  @relation(fields: [ownerId], references: [id])
+
+  coverUrl  String?
+  items     PlaylistTrack[]
+  isPublic  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+}
+
+model PlaylistTrack {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  playlistId String    @db.ObjectId
+  playlist   Playlist? @relation(fields: [playlistId], references: [id])
+
+  trackId String @db.ObjectId
+  track   Track? @relation(fields: [trackId], references: [id])
+
+  order   Int      @default(0)
+  addedAt DateTime @default(now())
+}
+
+model Like {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User?  @relation(fields: [userId], references: [id])
+
+  trackId String @db.ObjectId
+  track   Track? @relation(fields: [trackId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Follow {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  followerId String @db.ObjectId
+  follower   User?  @relation("UserFollowsArtists", fields: [followerId], references: [id])
+
+  artistId String         @db.ObjectId
+  artist   ArtistProfile? @relation("ArtistFollowedByUsers", fields: [artistId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model PlayEvent {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id])
+
+  trackId String @db.ObjectId
+  track   Track? @relation(fields: [trackId], references: [id])
+
+  startedAt DateTime @default(now())
+  completed Boolean  @default(false)
+}
+
+model Subscription {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User?  @relation(fields: [userId], references: [id])
+
+  provider         String
+  plan             String
+  status           String
+  currentPeriodEnd DateTime?
+}
+
+model Payment {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  user   User?  @relation(fields: [userId], references: [id])
+
+  amount    Int
+  currency  String
+  provider  String
+  reference String   @unique
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model LabelApplication {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  artistId String         @db.ObjectId
+  artist   ArtistProfile? @relation(fields: [artistId], references: [id])
+
+  pitch     String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+}
