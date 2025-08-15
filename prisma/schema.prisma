@@ -169,6 +169,10 @@ model PlayEvent {
 
   startedAt DateTime @default(now())
   completed Boolean  @default(false)
+
+  @@index([trackId])
+  @@index([userId])
+  @@index([startedAt])
 }
 
 model Subscription {
